@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Control de Cooler — NS Kitchen</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #1b1f1d;
+    --panel: #232825;
+    --panel-2: #2c322e;
+    --line: #3a423d;
+    --paper: #f2ecdd;
+    --paper-2: #e6dfc9;
+    --ink: #21201a;
+    --steel: #9fb0a8;
+    --c-carb:   #c99a4b;
+    --c-veg:    #5f8f56;
+    --c-prot:   #a8412f;
+    --c-sauce:  #c1652b;
+    --c-garn:   #7fa06a;
+    --entrada:  #4f8f6d;
+    --salida:   #b2503a;
+    --waste:    #8a6d3b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0);
+    background-size: 22px 22px;
+    color: var(--steel);
+    font-family:'IBM Plex Mono', monospace;
+    padding: 24px 14px 60px;
+  }
+  .wrap{ max-width: 720px; margin:0 auto; }
+  h1{
+    font-family:'Bebas Neue', sans-serif;
+    letter-spacing:3px;
+    font-size: 40px;
+    color:#f2ecdd;
+    margin: 0 0 2px;
+  }
+  .sub{
+    font-size:12px;
+    letter-spacing:2px;
+    color: var(--steel);
+    text-transform:uppercase;
+    margin-bottom:20px;
+    border-bottom: 1px dashed var(--line);
+    padding-bottom:14px;
+  }
+  .toggle{
+    display:flex; gap:10px; margin-bottom:18px;
+  }
+  .toggle button{
+    flex:1; padding:16px 6px;
+    font-family:'Bebas Neue', sans-serif;
+    font-size:19px; letter-spacing:1.5px;
+    border-radius:6px; border:2px solid var(--line);
+    background: var(--panel); color: var(--steel);
+    cursor:pointer; transition: all .15s ease;
+  }
+  .toggle button.active[data-type="entrada"]{ background: var(--entrada); border-color: var(--entrada); color:#0d150f;}
+  .toggle button.active[data-type="salida"]{ background: var(--salida); border-color: var(--salida); color:#180b08;}
+  .toggle button.active[data-type="waste"]{ background: var(--waste); border-color: var(--waste); color:#160f04;}
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+  label{
+    display:block; font-size:11px; letter-spacing:1.5px;
+    text-transform:uppercase; color:#7c8b82; margin-bottom:6px;
+  }
+  select, input[type="number"], input[type="text"], textarea{
+    width:100%; background:var(--panel-2); color:#f2ecdd;
+    border:1px solid var(--line); border-radius:6px;
+    padding:10px; font-family:'IBM Plex Mono', monospace; font-size:14px;
+    margin-bottom:14px;
+  }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+  .meals-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-bottom:14px;}
+  .meals-grid button{
+    padding:8px 2px; font-size:12px; border-radius:6px;
+    border:1px solid var(--line); background:var(--panel-2); color:var(--steel);
+    cursor:pointer; font-family:'IBM Plex Mono',monospace;
+  }
+  .meals-grid button.active{ background:#f2ecdd; color:var(--ink); border-color:#f2ecdd; font-weight:600;}
+  .meals-grid button:disabled{ opacity:.35; cursor:not-allowed; }
+
+  .menu-title{
+    font-family:'Bebas Neue', sans-serif; font-size:24px; letter-spacing:1.5px;
+    color:#f2ecdd; margin: 4px 0 12px;
+  }
+
+  .item-row{
+    display:grid; grid-template-columns: 34px 1fr 100px; gap:10px;
+    align-items:center; padding:8px 0; border-bottom:1px dashed var(--line);
+  }
+  .badge{
+    width:30px; height:30px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:13px; color:#fff;
+  }
+  .badge.C{ background: var(--c-carb); }
+  .badge.V{ background: var(--c-veg); }
+  .badge.P{ background: var(--c-prot); }
+  .badge.S{ background: var(--c-sauce); }
+  .badge.G{ background: var(--c-garn); }
+  .item-name{ font-size:13.5px; color:#e7e2d3; }
+  .item-row input{ margin:0; text-align:right; padding:8px 6px;}
+
+  .legend{ display:flex; flex-wrap:wrap; gap:10px 16px; font-size:11px; margin-bottom:16px; }
+  .legend span{ display:flex; align-items:center; gap:6px; }
+  .legend i{ width:12px; height:12px; border-radius:50%; display:inline-block; }
+
+  .submit-btn{
+    width:100%; padding:14px; border:none; border-radius:8px;
+    font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:2px;
+    background:#f2ecdd; color:var(--ink); cursor:pointer;
+  }
+  .submit-btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .msg{ font-size:12px; margin-top:8px; min-height:16px; }
+  .msg.ok{ color:#8fd9a8; }
+  .msg.err{ color:#e39a8c; }
+  .empty-menu{ text-align:center; color:#5c665f; font-size:12.5px; padding:26px 10px; border:1px dashed var(--line); border-radius:8px; }
+
+  #garnishDetails{
+    margin-bottom:14px; border:1px solid var(--line); border-radius:8px;
+    background: var(--panel-2); padding:0 12px;
+  }
+  #garnishDetails summary{
+    cursor:pointer; padding:12px 0; font-size:11px; letter-spacing:1.5px;
+    text-transform:uppercase; color:#c8d3cc; font-weight:600;
+    list-style:none; display:flex; align-items:center; justify-content:space-between;
+  }
+  #garnishDetails summary::-webkit-details-marker{ display:none; }
+  #garnishDetails summary::after{
+    content:"▾"; font-size:14px; color:#7c8b82; transition: transform .15s ease;
+  }
+  #garnishDetails[open] summary::after{ transform: rotate(180deg); }
+  #garnishDetails #garnishSection{ padding-bottom:10px; }
+  #garnishDetails .item-row{ border-bottom:1px dashed var(--line); }
+  #garnishDetails .item-row:last-child{ border-bottom:none; }
+
+  /* Ticket log */
+  .log-head{
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;
+  }
+  .log-head h2{
+    font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px; color:#f2ecdd; margin:0;
+  }
+  .log-actions{ display:flex; gap:8px; }
+  .log-actions button{
+    background:transparent; border:1px solid var(--line); color:var(--steel);
+    padding:6px 10px; border-radius:6px; font-size:11px; cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .filters{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .filters select{ margin:0; flex:1; min-width:110px;}
+
+  .ticket-roll{ display:flex; flex-direction:column; gap:10px; }
+  .ticket{
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 3px;
+    padding: 12px 14px 10px;
+    position:relative;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  }
+  .ticket::before, .ticket::after{
+    content:"";
+    position:absolute; left:0; right:0; height:6px;
+    background: radial-gradient(circle, var(--bg) 4px, transparent 4.5px);
+    background-size: 12px 12px; background-position: -2px center;
+  }
+  .ticket::before{ top:-3px; }
+  .ticket::after{ bottom:-3px; }
+  .ticket-top{
+    display:flex; justify-content:space-between; font-size:11px;
+    border-bottom:1px dashed var(--paper-2); padding-bottom:6px; margin-bottom:6px;
+    text-transform:uppercase; letter-spacing:1px;
+  }
+  .ticket-type{ font-weight:700; }
+  .ticket-type.entrada{ color: var(--entrada); }
+  .ticket-type.salida{ color: var(--salida); }
+  .ticket-type.waste{ color: var(--waste); }
+  .ticket-meta{ font-size:12px; margin-bottom:6px; }
+  .ticket-meta b{ color:var(--ink); }
+  .ticket-items{ font-size:12px; }
+  .ticket-item-line{ display:flex; justify-content:space-between; padding:1px 0; }
+  .ticket-item-line .cat{ display:inline-block; width:14px; font-weight:700; }
+  .ticket-del{
+    position:absolute; top:8px; right:8px; background:none; border:none;
+    color:#8a8272; font-size:14px; cursor:pointer;
+  }
+  .empty{ text-align:center; color:#5c665f; font-size:12px; padding:30px 0; }
+  .footnote{ font-size:10px; color:#5c665f; margin-top:6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>COOLER CONTROL</h1>
+  <div class="sub">NS KITCHEN — FOOD IN, OUT & WASTE LOG</div>
+
+  <div class="toggle">
+    <button data-type="entrada" class="active">IN</button>
+    <button data-type="salida">OUT</button>
+    <button data-type="waste">WASTE</button>
+  </div>
+
+  <div class="panel">
+    <div class="row2">
+      <div>
+        <label id="personaLabel">Person entering food</label>
+        <select id="persona"></select>
+      </div>
+      <div>
+        <label>Date and time</label>
+        <input type="text" id="fechaHora" readonly>
+      </div>
+    </div>
+
+    <label>Menu</label>
+    <select id="menuSelect"></select>
+
+    <details id="garnishDetails">
+      <summary id="garnishSummary">Menu garnish</summary>
+      <div id="garnishSection"></div>
+    </details>
+
+    <label>Meals</label>
+    <div class="meals-grid" id="mealsGrid"></div>
+    <div id="menuBody"></div>
+
+    <label>Comment (optional)</label>
+    <textarea id="comentario" rows="2" placeholder="E.g.: box opened, leftover from event..."></textarea>
+
+    <button class="submit-btn" id="submitBtn">SUBMIT</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="panel">
+    <div class="log-head">
+      <h2>RECORDS</h2>
+      <div class="log-actions">
+        <button id="exportBtn">EXPORT CSV</button>
+      </div>
+    </div>
+    <div class="filters">
+      <select id="fType">
+        <option value="">All (In/Out/W)</option>
+        <option value="entrada">In</option>
+        <option value="salida">Out</option>
+        <option value="waste">Waste</option>
+      </select>
+      <select id="fPersona"><option value="">Any person</option></select>
+      <select id="fMenu"><option value="">Any menu</option></select>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--c-carb)"></i>C · Carbohydrate</span>
+      <span><i style="background:var(--c-veg)"></i>V · Vegetable</span>
+      <span><i style="background:var(--c-prot)"></i>P · Protein</span>
+      <span><i style="background:var(--c-sauce)"></i>S · Salsa</span>
+      <span><i style="background:var(--c-garn)"></i>G · Garnish (general per menu)</span>
+    </div>
+    <div class="footnote" style="margin-bottom:12px;">Default unit: LB · Sauces: BINS · Wings / Turkey Burger / Hamburger: UNITS</div>
+    <div class="ticket-roll" id="ticketRoll"></div>
+    <div class="footnote">Records are saved in the cloud and are visible to everyone on the team using this app.</div>
+  </div>
+</div>
+
+<script>
+// Pega aquí la URL de tu Web App de Google Apps Script (termina en /exec).
+// Mientras esté vacía, la app funciona igual pero solo guarda localmente.
+const SHEET_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxyHz4kze4L32HSJLjuXi9objwt7IR6qkUeEGQo7W55aYZIIcg1dNeaYEpLm566Zcj3/exec';
+
+const PERSONAS_ENTRADA = ["YOLY","KAM","JOSE","MAYERLY","CESAR","OTRO"];
+const PERSONAS_SALIDA  = ["ALEX","HUMBERTO","LOUIS","OTRO"];
+const PERSONAS_WASTE   = ["YOLY","KAM","JOSE","MAYERLY","CESAR","ALEX","HUMBERTO","LOUIS","OTRO"];
+
+const MENUS = {
+  1: { name:"MENU 1", garnish:['CHIVE CHOPPED','PARSLEY','PARSLEY FLAKES','BASIL','PARMESAN CHEESE'], meals: {
+        1: { name:"BUFFALO WINGS", items:[
+              {cat:'C', name:'WAFFLES'},
+              {cat:'V', name:'ONION COCKTAIL'},
+              {cat:'V', name:'GRAPE TOMATO'},
+              {cat:'V', name:'BANANA PEPPER'},
+              {cat:'P', name:'CHICKEN WINGS'},
+              {cat:'S', name:'BUFFALO SAUCE'},
+           ]},
+        2: { name:"SWEET & SOUR CHICKEN", items:[
+              {cat:'C', name:'JASMINE RICE'},
+              {cat:'V', name:'SNAP PEAS AND CARROTS'},
+              {cat:'P', name:'DICED CHICKEN'},
+              {cat:'S', name:'SWEET N SOUR SAUCE'},
+           ]},
+        3: { name:"CHOPHOUSE GRASS FED BEEF", items:[
+              {cat:'C', name:'DICED YUKON RED POTATO'},
+              {cat:'V', name:'PEAS Y RAISINS'},
+              {cat:'P', name:'GRASS FED GROUND'},
+           ]},
+        4: { name:"APPLE CIDER BBQ MEATBALLS", items:[
+              {cat:'C', name:'MASHED POTATOES'},
+              {cat:'V', name:'GREEN BEANS'},
+              {cat:'P', name:'BEEF MEATBALLS'},
+              {cat:'S', name:'APPLE CIDER BBQ'},
+           ]},
+        5: { name:"GRILLED CHICKEN A LA VODKA", items:[
+              {cat:'C', name:'WHOLE WHEAT PENNE'},
+              {cat:'V', name:'BROCCOLI'},
+              {cat:'P', name:'GRILLED CHICKEN'},
+              {cat:'S', name:'VODKA SAUCE'},
+           ]},
+  }},
+  2: { name:"MENU 2", garnish:['PARSLEY','CILANTRO','SLICED JALAPENO','RED PEPPER','CHIVES','PINEAPPLE','BACON'], meals: {
+        1: { name:"HONEY BBQ CHICKEN", items:[
+              {cat:'C', name:'BABY POTATOES'},
+              {cat:'V', name:'SHREDDED CARROTS AND CABBAGE'},
+              {cat:'P', name:'CHICKEN BREAST'},
+              {cat:'S', name:'HONEY BBQ SAUCE'},
+           ]},
+        2: { name:"TACO MEATBALLS", items:[
+              {cat:'C', name:'JASMINE RICE'},
+              {cat:'V', name:'FAJITA'},
+              {cat:'P', name:'CHICKEN MEATBALLS'},
+              {cat:'S', name:'SOFRITO'},
+           ]},
+        3: { name:"VENISON MAC & CHEESE", items:[
+              {cat:'C', name:'WHOLE GRAIN ELBOW PASTA'},
+              {cat:'V', name:'SAUERKRAUT (N/M)'},
+              {cat:'P', name:'GRAUND VENEZON'},
+              {cat:'S', name:'ORANGE SAUCE'},
+              {cat:'S', name:'L-FAT YELLOW CHEDDAR'},
+           ]},
+        4: { name:"CARIBBEAN PINEAPPLE CHICKEN TENDERS", items:[
+              {cat:'C', name:'PLANTAINS'},
+              {cat:'V', name:'ROOT VEG BLEND'},
+              {cat:'P', name:'CHICKEN NUGGETS'},
+              {cat:'S', name:'PINEAPPLE SALSA'},
+           ]},
+        5: { name:"CILANTRO LIME FILET MIGNON TIPS", items:[
+              {cat:'C', name:'SWEET POTATO HALF MOON, PLANE'},
+              {cat:'V', name:'BRUSSELS'},
+              {cat:'P', name:'FILET TIPS'},
+              {cat:'S', name:'LIME DRESSING ROAST GARLIC'},
+           ]},
+  }},
+  3: { name:"MENU 3", garnish:['DICED PEPPER','PARSLEY','GOAT CHEESE','PARMESAN CHEESE'], meals: {
+        1: { name:"TURMERIC MEATBALLS", items:[
+              {cat:'C', name:'MASH POTATO'},
+              {cat:'V', name:'BROCCOLI'},
+              {cat:'P', name:'CHICKEN MEATBALLS'},
+              {cat:'S', name:'TUMERIC'},
+           ]},
+        2: { name:"HONEY MUSTARD CHICKEN TENDERLOIN", items:[
+              {cat:'C', name:'SWEET POTATO HALF MOON (H/C)'},
+              {cat:'V', name:'GREEN BEANS'},
+              {cat:'P', name:'TENDER'},
+              {cat:'S', name:'HONEY MUSTARD'},
+           ]},
+        3: { name:"CHIPOTLE LIME VENISON", items:[
+              {cat:'C', name:'JASMIN RICE'},
+              {cat:'V', name:'DICED BEETS'},
+              {cat:'P', name:'VENISON'},
+              {cat:'S', name:'CHIPOTLE LIME'},
+           ]},
+        4: { name:"KETO CHICKEN PARMIGIANA", items:[
+              {cat:'C', name:'PASTA ANGEL HAIR'},
+              {cat:'P', name:'GRILLED CHICKEN'},
+              {cat:'S', name:'GARLIC MARINARA'},
+           ]},
+        5: { name:"SPICY STREET STEAK TACOS", items:[
+              {cat:'C', name:'TORTILLAS'},
+              {cat:'C', name:'CHICK PEAS'},
+              {cat:'V', name:'PEACH PICO DE GALLO'},
+              {cat:'P', name:'STEAK BULGOGY'},
+              {cat:'S', name:'PEACH / JALAPENO'},
+           ]},
+  }},
+  4: { name:"MENU 4", garnish:['DICED TOMATOS','PARSLEY','CILANTRO','RED PEPPER','CRAISINS','CHIVES'], meals: {
+        1: { name:"DIABLO CHICKEN PASTA", items:[
+              {cat:'C', name:'WHOLE WHEAT SPAGUETI'},
+              {cat:'V', name:'ORGANIC PEAS'},
+              {cat:'P', name:'DICED CHIKEN'},
+              {cat:'S', name:'DIABLO SAUCE'},
+           ]},
+        2: { name:"BBQ BEET POWER BOWL", items:[
+              {cat:'C', name:'MASH SWEET POTATO (SL)'},
+              {cat:'V', name:'GREEN BEANS'},
+              {cat:'P', name:'CHICKEN BREAST'},
+              {cat:'S', name:'BBQ BEETS'},
+           ]},
+        3: { name:"MANGO HABANERO ELK", items:[
+              {cat:'C', name:'PARBOILED YELLOW RICE'},
+              {cat:'V', name:'FAJITA'},
+              {cat:'P', name:'GRASS FED GROUND ELK (MH)'},
+              {cat:'S', name:'MANGO HABANERO'},
+           ]},
+        4: { name:"SWEET THAI MEATBALLS", items:[
+              {cat:'C', name:'COUS COUS'},
+              {cat:'V', name:'EDAMAME'},
+              {cat:'P', name:'BEEF MEATBALLS'},
+              {cat:'S', name:'CHILI SWEET THAI'},
+           ]},
+        5: { name:"ORANGE GINGER CHICKEN NUGGETS", items:[
+              {cat:'C', name:'BROWN RICE'},
+              {cat:'V', name:'BOK CHOY / NAPPA'},
+              {cat:'P', name:'CHICKEN NUGGETS'},
+              {cat:'S', name:'ORANGE GINGER SAUCE'},
+           ]},
+  }},
+  5: { name:"MENU 5", garnish:['RED PEPPERS','CHEDDAR','PARSHLEY','PARSLEY','ROSEMARY'], meals: {
+        1: { name:"SOUTHWEST BOWL", items:[
+              {cat:'C', name:'BLACK BEAN'},
+              {cat:'V', name:'BROCCOLI'},
+              {cat:'P', name:'CHICKEN CHUNKS'},
+              {cat:'S', name:'CILANTRO SOUR CREAM'},
+           ]},
+        2: { name:"KETO BACON CHEESEBURGER", items:[
+              {cat:'V', name:'ROOT VEG BLEND'},
+              {cat:'V', name:'SLICED TOMATO'},
+              {cat:'V', name:'CARAMELIZED ONION'},
+              {cat:'P', name:'TURKEY BURGER'},
+              {cat:'P', name:'TURKEY BACON'},
+              {cat:'S', name:'KETCHUP CURRY'},
+           ]},
+        3: { name:"CITRUS HONEY CHICKEN", items:[
+              {cat:'C', name:'ORZO'},
+              {cat:'V', name:'YELLOW SQUASH AND RED PEPPER'},
+              {cat:'P', name:'GRILLED CHICKEN'},
+              {cat:'S', name:'LEMON CAPER'},
+           ]},
+        4: { name:"SWEET HEAT ELK TACO", items:[
+              {cat:'C', name:'TORTILLA'},
+              {cat:'V', name:'NAPA / CRAMBERY'},
+              {cat:'P', name:'EKL'},
+              {cat:'S', name:'SWEET CRAMBERRY SAUCE'},
+              {cat:'S', name:'BBQ CHIPOTLE'},
+           ]},
+        5: { name:"ROSEMARY GARLIC MEATBALLS", items:[
+              {cat:'C', name:'PEPPER RICE PARBOLED LONG'},
+              {cat:'V', name:'COLIFLOWER'},
+              {cat:'V', name:'CARROT STICKS'},
+              {cat:'P', name:'HOMEMADE BEEF MEATBALLS'},
+              {cat:'S', name:'GARLIC AIOLI GLAZE'},
+           ]},
+  }},
+  6: { name:"MENU 6", garnish:['CHIVES','PINEAPLE CHUNGS','PARSLEY','RED PEPPER','PAPRICA'], meals: {
+        1: { name:"FIRECRACKER CHICKEN", items:[
+              {cat:'C', name:'PLANTAINS'},
+              {cat:'V', name:'PEAS AND COINT CARROTS'},
+              {cat:'P', name:'GRILL CHICKEN'},
+              {cat:'S', name:'BOOM BOOM SAUCE'},
+           ]},
+        2: { name:"PINEAPPLE GLAZED CHICKEN", items:[
+              {cat:'C', name:'COCONUT JASMIN'},
+              {cat:'V', name:'JICAMA MIX'},
+              {cat:'P', name:'DICED CHICKEN'},
+              {cat:'S', name:'PINEAPPLE SAUCE'},
+           ]},
+        3: { name:"DR. PEPPER MEATBALLS", items:[
+              {cat:'C', name:'GREEN BASMATI RICE'},
+              {cat:'V', name:'WAX BEANS'},
+              {cat:'V', name:'BEETS'},
+              {cat:'P', name:'CHICKEN MEAT BALLS'},
+              {cat:'S', name:'DR PEPPER'},
+           ]},
+        4: { name:"GRASS-FED STEAKHOUSE TACOS", items:[
+              {cat:'C', name:'TORTILLAS'},
+              {cat:'C', name:'RED BEANS'},
+              {cat:'V', name:'ONION'},
+              {cat:'P', name:'BULGOGI'},
+           ]},
+        5: { name:"CHIPOTLE VENISON MAC & CHEESE", items:[
+              {cat:'C', name:'ELBOW PASTA'},
+              {cat:'V', name:'BROCCOLI'},
+              {cat:'P', name:'VENISON'},
+              {cat:'S', name:'CHEDAR SAUCE'},
+           ]},
+  }},
+  7: { name:"MENU 7", garnish:['PARSLEY','CILANTRO','RED PEPPER','SESAME','CHIVES'], meals: {
+        1: { name:"FORGED FIRED MEATBALLS", items:[
+              {cat:'C', name:'SWEET POTATO HALF MOON (H/N)'},
+              {cat:'V', name:'GREEN BEANS'},
+              {cat:'P', name:'TURKEY MEATBALL'},
+              {cat:'S', name:'GUAJILLO'},
+           ]},
+        2: { name:"KING'S CURRY CHICKEN", items:[
+              {cat:'C', name:'PARBO YELLOW RICE'},
+              {cat:'V', name:'COULIFLOWER (P)'},
+              {cat:'P', name:'CHICKEN BREAST'},
+              {cat:'S', name:'TIKKA MASALA'},
+           ]},
+        3: { name:"POMEGRANATE CHICKEN TENDERS", items:[
+              {cat:'C', name:'ORZO / CRAINS'},
+              {cat:'V', name:'BROCOLI'},
+              {cat:'P', name:'CHIKEN TENDERLOIN'},
+              {cat:'S', name:'POMEGRANATE SAUCE'},
+           ]},
+        4: { name:"MONGOLIAN GRASS FED BEEF", items:[
+              {cat:'C', name:'WHITE RICE'},
+              {cat:'V', name:'FAJITA'},
+              {cat:'P', name:'GRASS FEED'},
+              {cat:'S', name:'MONGOLIAN'},
+           ]},
+        5: { name:"HONEY MUSTARD CHICKEN NUGGETS", items:[
+              {cat:'C', name:'SWEET POTATO TOTS'},
+              {cat:'V', name:'CARROTS / CABAGE'},
+              {cat:'P', name:'CHICKEN NUGGETS'},
+              {cat:'S', name:'HONNEY MUSTARD'},
+           ]},
+  }},
+  8: { name:"MENU 8", garnish:['CHEESE PARMESAN','PEACH','DICED TOMATO','PARSLEY','RED PEPPERS','LIME'], meals: {
+        1: { name:"ANABOLIC MARINARA MEATBALLS", items:[
+              {cat:'C', name:'ROTINI'},
+              {cat:'V', name:'PEAS, RED DICED ONION'},
+              {cat:'P', name:'CHICKEN MEAT BALLS'},
+              {cat:'S', name:'MARINARA'},
+           ]},
+        2: { name:"PEACH HABANERO FILET MIGNON", items:[
+              {cat:'C', name:'PARBOLE BEET RICE'},
+              {cat:'V', name:'SAUERKRAUT (Cit/M)'},
+              {cat:'P', name:'MIGNON'},
+              {cat:'S', name:'PEACH HABANERO'},
+           ]},
+        3: { name:"ELK SHEPHERD'S PIE", items:[
+              {cat:'C', name:'SWEET MASH POTATO'},
+              {cat:'V', name:'MIREPOIX (CT,CL,ON)'},
+              {cat:'P', name:'GRAUND ELK'},
+           ]},
+        4: { name:"HONEY BBQ CHICKEN", items:[
+              {cat:'C', name:'STUFFING'},
+              {cat:'V', name:'GREEN BEANS'},
+              {cat:'P', name:'TENDER'},
+              {cat:'S', name:'HONNEY BBQ'},
+           ]},
+        5: { name:"KEY LIME CHICKEN", items:[
+              {cat:'C', name:'QUINOA'},
+              {cat:'V', name:'EDAMAME'},
+              {cat:'V', name:'COINT CARROT'},
+              {cat:'P', name:'GRILL CHIKENT'},
+              {cat:'S', name:'KEY LIME'},
+           ]},
+  }},
+  9: { name:"MENU 9", garnish:['CARAMELIZED ONION','PARSLEY','RED PEPPERS','CILANTRO','GARLIC CHIP','SESAME WHITE','SESAME BLACK'], meals: {
+        1: { name:"FILET & CHICKEN GAINZ BOWL", items:[
+              {cat:'C', name:'JASMIN STICKY RICE'},
+              {cat:'V', name:'ZUCHINNI HALF MOON'},
+              {cat:'P', name:'FILET TIPS'},
+              {cat:'P', name:'DICED CHIKENT'},
+              {cat:'S', name:'YUM YUM SAUCE'},
+           ]},
+        2: { name:"SPICY TURKEY CHILI", items:[
+              {cat:'C', name:'BLACK BEANS'},
+              {cat:'V', name:'SAUERKRAUT (B)'},
+              {cat:'P', name:'GROUND TURKEY'},
+              {cat:'S', name:'FIRE ENCHILADA'},
+           ]},
+        3: { name:"HONEY GARLIC WINGS", items:[
+              {cat:'C', name:'CHICK PEAS HUMUS'},
+              {cat:'P', name:'CHICKEN WINGS'},
+              {cat:'S', name:'HONEY GARLIC'},
+           ]},
+        4: { name:"MANGO HABANERO CHICKEN", items:[
+              {cat:'C', name:'SWEET POTATO HALF MOON(H)'},
+              {cat:'V', name:'CELERY AND CARROT (MG)'},
+              {cat:'P', name:'CHICKEN BREAST'},
+              {cat:'S', name:'MANGO HABANERO'},
+              {cat:'S', name:'MANGO VINAIGRETTE'},
+           ]},
+        5: { name:"A-1 VENISON", items:[
+              {cat:'C', name:'MASHED POTATO'},
+              {cat:'V', name:'TURNEY'},
+              {cat:'P', name:'GRASS FED A1 VENISON'},
+              {cat:'S', name:'ALFREDO SAUCE'},
+           ]},
+  }},
+  10: { name:"MENU 10", garnish:['PARSLEY','BANANA PEPPER','CHIVES','PINEAPPLE','CRAINS'], meals: {
+        1: { name:"ROMESCO BLACKENED CHICKEN", items:[
+              {cat:'C', name:'BASMATIC RICE PARSLEY'},
+              {cat:'V', name:'FAJITA'},
+              {cat:'P', name:'CHICKEN BREAST'},
+              {cat:'S', name:'ROMESCO'},
+           ]},
+        2: { name:"MESQUITE SMOKED TURKEY BURGER", items:[
+              {cat:'C', name:'WAFFLES POTATO'},
+              {cat:'V', name:'GRAPE AND RED ONION'},
+              {cat:'P', name:'TURKEY BURGER'},
+              {cat:'S', name:'HONNEY BBQ'},
+           ]},
+        3: { name:"HONEY GLAZED VENISON", items:[
+              {cat:'C', name:'JASMINE RICE'},
+              {cat:'V', name:'SHREDDED CARROT ADN CABAGE'},
+              {cat:'P', name:'GROUND VENISON'},
+           ]},
+        4: { name:"SWEET & SOUR CHICKEN TENDERS", items:[
+              {cat:'C', name:'ORZO / BACON'},
+              {cat:'V', name:'BROCCOLI'},
+              {cat:'P', name:'CHICKEN NUGGETS'},
+              {cat:'S', name:'SWEET & SOUR'},
+              {cat:'S', name:'WHITE CHEESE'},
+           ]},
+        5: { name:"HABANERO CHIMICHURRI FILET MIGNON", items:[
+              {cat:'C', name:'MASHED POTATO'},
+              {cat:'V', name:'ZUCCHINI HALF MOON'},
+              {cat:'P', name:'MIGNON'},
+              {cat:'S', name:'CHIMICHURRI'},
+           ]},
+  }},
+  11: { name:"MENU 11", garnish:['CHEESE PARMESAN','CHIVES','PARSLEY'], meals: {
+        1: { name:"AVOCADO CHICKEN", items:[
+              {cat:'C', name:'PLANTAINS'},
+              {cat:'V', name:'SHREDDED CARROT, CABAGE KEL'},
+              {cat:'P', name:'DICED CHICKEN'},
+              {cat:'S', name:'AVOCADO SALSA'},
+           ]},
+        2: { name:"TURKEY ENCHILADA", items:[
+              {cat:'C', name:'WHOLE WHEAT TORTILLAS'},
+              {cat:'V', name:'FAJITA BLEND'},
+              {cat:'P', name:'GROUND TURKEY'},
+              {cat:'S', name:'ENCHILADA SAUCE'},
+           ]},
+        3: { name:"BROWN SUGAR BOURBON FILET MIGNON", items:[
+              {cat:'C', name:'BABY BAKERS POTATOES'},
+              {cat:'V', name:'MUSHROOMS'},
+              {cat:'V', name:'CAULIFLOWER'},
+              {cat:'P', name:'FILET TIPS'},
+              {cat:'S', name:'BOURBON SAUCE'},
+           ]},
+        4: { name:"CHIPOTLE ALFREDO CHICKEN PASTA", items:[
+              {cat:'C', name:'WHOLE WHEAT PENNE'},
+              {cat:'V', name:'GRAPE TOMATO'},
+              {cat:'P', name:'GRILLED CHICKEN'},
+              {cat:'S', name:'CHIPOTLE ALFREDO'},
+           ]},
+        5: { name:"CHILI STEAK BARBARIAN BOWL", items:[
+              {cat:'C', name:'KIMCHI PARBOLED RICE'},
+              {cat:'V', name:'BROCCOLI'},
+              {cat:'P', name:'BULGOGY'},
+              {cat:'S', name:'GINGER SWEET CHILI'},
+           ]},
+  }},
+  12: { name:"MENU 12", garnish:['DRY ONION','ROSEMARY','RED PEPPER','PARSLEY','DRY TOMATO','DRY PARSLEY'], meals: {
+        1: { name:"ROSEMARY GARLIC CHICKEN", items:[
+              {cat:'C', name:'CHICKPEA'},
+              {cat:'V', name:'SPINACH + CREAM'},
+              {cat:'P', name:'GRILLED CHICKEN'},
+              {cat:'S', name:'GARLIC AIOLI'},
+           ]},
+        2: { name:"GRASS FED BEEF TERIYAKI", items:[
+              {cat:'C', name:'JASMINE RICE'},
+              {cat:'V', name:'MIREPOIX DICED'},
+              {cat:'P', name:'GROUND BEEF'},
+              {cat:'S', name:'TERIYAKI SAUCE'},
+           ]},
+        3: { name:"SPARTAN SPICE MEATBALLS", items:[
+              {cat:'C', name:'BROWN RICE'},
+              {cat:'V', name:'GREEN BEANS'},
+              {cat:'P', name:'CHICKEN MEATBALL'},
+              {cat:'S', name:'TZATZIKI SAUCE'},
+           ]},
+        4: { name:"SPICY THAI CHICKEN", items:[
+              {cat:'C', name:'DICED SWEET POTATO'},
+              {cat:'V', name:'NAPA+PEACH+CRAINS'},
+              {cat:'P', name:'DICED CHICKEN'},
+              {cat:'S', name:'SPICY PINEAPPLE SAUCE'},
+           ]},
+        5: { name:"ELK MAC & CHEESE", items:[
+              {cat:'C', name:'WHOLE GRAIN ELBOW PASTA'},
+              {cat:'V', name:'ZUCCHINI'},
+              {cat:'P', name:'ELK'},
+              {cat:'S', name:'WHITE LOW FAT CHEDDAR'},
+           ]},
+  }},
+};
+
+let currentType = 'entrada';
+let currentMenuNum = 1;
+let currentMeal = 1;
+let entries = [];
+
+const personaSel = document.getElementById('persona');
+const personaLabel = document.getElementById('personaLabel');
+const menuSelect = document.getElementById('menuSelect');
+const mealsGrid = document.getElementById('mealsGrid');
+const menuBody = document.getElementById('menuBody');
+const fechaHoraInput = document.getElementById('fechaHora');
+const msgEl = document.getElementById('msg');
+const ticketRoll = document.getElementById('ticketRoll');
+const fPersona = document.getElementById('fPersona');
+const fMenu = document.getElementById('fMenu');
+const fType = document.getElementById('fType');
+
+function updateFechaHora(){
+  const now = new Date();
+  fechaHoraInput.value = now.toLocaleDateString('es-US') + ' ' + now.toLocaleTimeString('es-US', {hour:'2-digit', minute:'2-digit'});
+}
+updateFechaHora();
+setInterval(updateFechaHora, 30000);
+
+function personasForType(type){
+  if(type === 'entrada') return PERSONAS_ENTRADA;
+  if(type === 'salida') return PERSONAS_SALIDA;
+  return PERSONAS_WASTE;
+}
+function labelForType(type){
+  if(type === 'entrada') return 'Person entering food';
+  if(type === 'salida') return 'Person taking out food';
+  return 'Person logging the waste';
+}
+
+function renderPersonas(){
+  const list = personasForType(currentType);
+  personaLabel.textContent = labelForType(currentType);
+  personaSel.innerHTML = list.map(p => `<option value="${p}">${p}</option>`).join('');
+}
+
+function renderMenuSelect(){
+  menuSelect.innerHTML = Object.keys(MENUS).map(k =>
+    `<option value="${k}" ${+k===currentMenuNum?'selected':''}>MENU ${k}${MENUS[k] ? '' : ' (sin datos)'}</option>`
+  ).join('');
+}
+
+function renderMealsGrid(){
+  const menu = MENUS[currentMenuNum];
+  mealsGrid.innerHTML = [1,2,3,4,5].map(m => {
+    const disabled = !menu;
+    return `<button data-meal="${m}" class="${m===currentMeal?'active':''}" ${disabled?'disabled':''}>MEAL ${m}</button>`;
+  }).join('');
+  [...mealsGrid.querySelectorAll('button')].forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      currentMeal = +btn.dataset.meal;
+      renderMealsGrid();
+      renderMenuBody();
+    });
+  });
+}
+
+function getUnit(cat, name){
+  const n = name.toUpperCase();
+  if(cat === 'S') return 'BINES';
+  if(n.includes('WING') || n.includes('TURKEY BURGER') || n.includes('HAMBURGER')) return 'UND';
+  return 'LB';
+}
+
+function renderMenuBody(){
+  const menu = MENUS[currentMenuNum];
+  if(!menu){
+    menuBody.innerHTML = `<div class="empty-menu">MENU ${currentMenuNum} doesn't have any dishes loaded yet.<br>Send me the info for its 5 meals and I'll add it.</div>`;
+    return;
+  }
+  const meal = menu.meals[currentMeal];
+  const rows = meal.items.map((it, idx) => {
+    const unit = getUnit(it.cat, it.name);
+    return `
+    <div class="item-row" data-idx="${idx}">
+      <div class="badge ${it.cat}">${it.cat}</div>
+      <div class="item-name">${it.name}</div>
+      <input type="number" min="0" step="0.1" placeholder="${unit}" data-cat="${it.cat}" data-name="${it.name}" data-unit="${unit}">
+    </div>
+  `;}).join('');
+  menuBody.innerHTML = `<div class="menu-title">MENU ${currentMenuNum} · MEAL ${currentMeal} · ${meal.name}</div>${rows}`;
+}
+
+function renderGarnishSection(){
+  const menu = MENUS[currentMenuNum];
+  const garnishSection = document.getElementById('garnishSection');
+  if(!menu || !menu.garnish || menu.garnish.length === 0){
+    garnishSection.innerHTML = `<div class="empty-menu" style="padding:12px;">No garnish loaded for this menu yet.</div>`;
+    return;
+  }
+  garnishSection.innerHTML = menu.garnish.map((name, idx) => `
+    <div class="item-row" data-gidx="${idx}">
+      <div class="badge G">G</div>
+      <div class="item-name">${name}</div>
+      <input type="number" min="0" step="0.1" placeholder="LB" data-gname="${name}">
+    </div>
+  `).join('');
+}
+
+menuSelect.addEventListener('change', ()=>{
+  currentMenuNum = +menuSelect.value;
+  currentMeal = 1;
+  renderGarnishSection();
+  renderMealsGrid();
+  renderMenuBody();
+});
+
+document.querySelectorAll('.toggle button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    currentType = btn.dataset.type;
+    document.querySelectorAll('.toggle button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderPersonas();
+  });
+});
+
+function showMsg(text, ok=true){
+  msgEl.textContent = text;
+  msgEl.className = 'msg ' + (ok ? 'ok' : 'err');
+  setTimeout(()=>{ msgEl.textContent=''; }, 3500);
+}
+
+async function loadEntries(){
+  try{
+    const res = await window.storage.get('cooler-entries', true);
+    entries = res ? JSON.parse(res.value) : [];
+  }catch(e){
+    entries = [];
+  }
+  renderFilters();
+  renderTicketRoll();
+}
+
+async function saveEntries(){
+  try{
+    await window.storage.set('cooler-entries', JSON.stringify(entries), true);
+  }catch(e){
+    showMsg('No se pudo guardar en la nube, pero el registro quedó en esta sesión.', false);
+  }
+}
+
+document.getElementById('submitBtn').addEventListener('click', async ()=>{
+  const menu = MENUS[currentMenuNum];
+  if(!menu){ showMsg('This menu does not have any dishes loaded yet.', false); return; }
+  const meal = menu.meals[currentMeal];
+  const persona = personaSel.value;
+  const comentario = document.getElementById('comentario').value.trim();
+  const itemInputs = [...menuBody.querySelectorAll('input[type="number"]')];
+  const items = itemInputs
+    .filter(inp => inp.value !== '' && parseFloat(inp.value) > 0)
+    .map(inp => ({ cat: inp.dataset.cat, name: inp.dataset.name, peso: parseFloat(inp.value), unidad: inp.dataset.unit }));
+
+  const garnishInputs = [...document.getElementById('garnishSection').querySelectorAll('input[type="number"]')];
+  garnishInputs
+    .filter(inp => inp.value !== '' && parseFloat(inp.value) > 0)
+    .forEach(inp => items.push({ cat: 'G', name: inp.dataset.gname, peso: parseFloat(inp.value), unidad: 'LB' }));
+
+  if(items.length === 0){
+    showMsg('Enter at least one quantity before submitting.', false);
+    return;
+  }
+
+  const entry = {
+    id: Date.now(),
+    tipo: currentType,
+    persona,
+    menuNum: currentMenuNum,
+    mealNum: currentMeal,
+    mealName: meal.name,
+    fechaHora: fechaHoraInput.value,
+    comentario,
+    items
+  };
+  entries.unshift(entry);
+  await saveEntries();
+  syncToSheets(entry);
+  renderFilters();
+  renderTicketRoll();
+  itemInputs.forEach(inp => inp.value='');
+  garnishInputs.forEach(inp => inp.value='');
+  document.getElementById('comentario').value='';
+  showMsg('Entry saved.');
+});
+
+// Envía el registro al Google Sheet (si SHEET_WEBAPP_URL está configurada).
+// No bloquea la interfaz: si falla o no está configurada, el registro local no se pierde.
+function syncToSheets(entry){
+  if(!SHEET_WEBAPP_URL) return;
+  fetch(SHEET_WEBAPP_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(entry)
+  }).catch(()=>{ /* if there's no internet, the entry is already saved locally */ });
+}
+
+function renderFilters(){
+  const personas = [...new Set(entries.map(e=>e.persona))].sort();
+  const menus = [...new Set(entries.map(e=>e.menuNum))].sort((a,b)=>a-b);
+  const curP = fPersona.value, curM = fMenu.value;
+  fPersona.innerHTML = '<option value="">Any person</option>' + personas.map(p=>`<option value="${p}">${p}</option>`).join('');
+  fMenu.innerHTML = '<option value="">Any menu</option>' + menus.map(m=>`<option value="${m}">MENU ${m}</option>`).join('');
+  fPersona.value = curP; fMenu.value = curM;
+}
+
+[fType, fPersona, fMenu].forEach(el => el.addEventListener('change', renderTicketRoll));
+
+function renderTicketRoll(){
+  const filtered = entries.filter(e=>{
+    if(fType.value && e.tipo !== fType.value) return false;
+    if(fPersona.value && e.persona !== fPersona.value) return false;
+    if(fMenu.value && String(e.menuNum) !== fMenu.value) return false;
+    return true;
+  });
+
+  if(filtered.length === 0){
+    ticketRoll.innerHTML = '<div class="empty">No records yet. The first chit will show up here.</div>';
+    return;
+  }
+
+  const typeLabel = { entrada:'▲ IN', salida:'▼ OUT', waste:'✕ WASTE' };
+
+  ticketRoll.innerHTML = filtered.map(e => `
+    <div class="ticket" data-id="${e.id}">
+      <button class="ticket-del" title="Eliminar">✕</button>
+      <div class="ticket-top">
+        <span class="ticket-type ${e.tipo}">${typeLabel[e.tipo]}</span>
+        <span>${e.fechaHora}</span>
+      </div>
+      <div class="ticket-meta"><b>${e.persona}</b> — MENU ${e.menuNum} · MEAL ${e.mealNum} · ${e.mealName}</div>
+      <div class="ticket-items">
+        ${e.items.map(it => `<div class="ticket-item-line"><span><span class="cat">${it.cat}</span>${it.name}</span><span>${it.peso} ${(it.unidad||'LB').toLowerCase()}</span></div>`).join('')}
+      </div>
+      ${e.comentario ? `<div class="ticket-meta">Note: ${e.comentario}</div>` : ''}
+    </div>
+  `).join('');
+
+  ticketRoll.querySelectorAll('.ticket-del').forEach(btn=>{
+    btn.addEventListener('click', async (ev)=>{
+      const id = +ev.target.closest('.ticket').dataset.id;
+      entries = entries.filter(e=>e.id !== id);
+      await saveEntries();
+      renderFilters();
+      renderTicketRoll();
+    });
+  });
+}
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  if(entries.length === 0){ showMsg('No records to export.', false); return; }
+  const header = ['Date_Time','Type','Person','Menu','Meal','Category','Item','Quantity','Unit','Comment'];
+  const rows = [];
+  entries.forEach(e=>{
+    e.items.forEach(it=>{
+      rows.push([e.fechaHora, e.tipo, e.persona, `MENU ${e.menuNum}`, `MEAL ${e.mealNum} - ${e.mealName}`, it.cat, it.name, it.peso, it.unidad||'LB', e.comentario||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+    });
+  });
+  const csv = [header.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'control_cooler.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+renderPersonas();
+renderMenuSelect();
+renderGarnishSection();
+renderMealsGrid();
+renderMenuBody();
+loadEntries();
+</script>
+</body>
+</html>
